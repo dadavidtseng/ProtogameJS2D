@@ -1,0 +1,56 @@
+*.dat
+/.spec-workflow/
+
+/.idea/
+/.vs/
+/.qodo/
+/[Tt]emporary/
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Log files
+*.log
+/Run/Logs/
+
+# Claude AI internal files
+.claude/
+Run/Data/Models/TutorialBox_Phong/screenshot000.png
+Run/Data/Models/TutorialBox_Phong/Tutorial_Box.FBX
+Run/Data/Models/TutorialBox_Phong/Tutorial_Box.max
+Run/Data/Models/TutorialBox_Phong/Tutorial_Box.psd
+Run/Data/Models/TutorialBox_Phong/Tutorial_Box_Diffuse.tga
+Run/Data/Models/TutorialBox_Phong/Tutorial_Box_Normal.tga
+Run/Data/Models/TutorialBox_Phong/Tutorial_Box_SpecGlossEmit.tga
+Run/Data/Models/Woman/Woman_Diffuse.png
+Run/Data/Models/Woman/Woman_Normal.png
