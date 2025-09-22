@@ -16,9 +16,6 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Subsystems">
-      <UniqueIdentifier>{8426af66-dfd7-4c82-92cc-127a885b31ed}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Documentation">
       <UniqueIdentifier>{8f6262e8-8950-43f3-a0f7-ee09a9ca5217}</UniqueIdentifier>
     </Filter>
@@ -40,9 +37,6 @@
       <UniqueIdentifier>{c5182ced-bf91-8765-dc10-56789012ef01}</UniqueIdentifier>
     </Filter>
     <!-- Subsystem Categories -->
-    <Filter Include="Subsystems\Lighting">
-      <UniqueIdentifier>{5bbbd4fc-9984-4f94-8118-657dfacd0a1f}</UniqueIdentifier>
-    </Filter>
     <!-- Documentation Categories -->
     <Filter Include="Documentation\Configuration">
       <UniqueIdentifier>{d6293dfe-c0a2-9876-ed21-6789012f0123}</UniqueIdentifier>
@@ -88,9 +82,6 @@
     <ClCompile Include="Framework/ScriptReloader.cpp">
       <Filter>GameCore</Filter>
     </ClCompile>
-    <ClCompile Include="Subsystem/Light/LightSubsystem.cpp">
-      <Filter>GameCore</Filter>
-    </ClCompile>
   </ItemGroup>
   <!-- //////////////////////////////////////////////////////////////////////////////////////////////// -->
   <!-- HEADER FILE ORGANIZATION -->
@@ -123,7 +114,6 @@
     <ClInclude Include="Framework/GameCommon.hpp" />
     <ClInclude Include="Framework/GameScriptInterface.hpp" />
     <ClInclude Include="Framework/ScriptReloader.hpp" />
-    <ClInclude Include="Subsystem/Light/LightSubsystem.hpp" />
   </ItemGroup>
   <!-- //////////////////////////////////////////////////////////////////////////////////////////////// -->
   <!-- DOCUMENTATION AND PROJECT FILES -->

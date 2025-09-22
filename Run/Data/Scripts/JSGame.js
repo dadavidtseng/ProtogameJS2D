@@ -153,7 +153,7 @@ class JSGame {
 
         // Call C++ engine render through JSEngine (preserve original logic)
         if (shouldRenderValue && this.engine) {
-            this.engine.renderCppEngine(0.0, 0.0);
+            this.engine.renderCppEngine();
         }
     }
 
@@ -222,37 +222,37 @@ class JSGame {
      * Test methods to demonstrate the framework
      */
     testCreateCube() {
-        // if (this.engine) {
-        //     const x = (Math.random() - 0.5) * 10;
-        //     const y = (Math.random() - 0.5) * 10;
-        //     const z = Math.random() * 3;
-        //
-        //     this.engine.createCube(x, y, z);
-        //     console.log('JSGame: Test - Created random cube');
-        // }
+        if (this.engine) {
+            const x = (Math.random() - 0.5) * 10;
+            const y = (Math.random() - 0.5) * 10;
+            const z = Math.random() * 3;
+
+            this.engine.createCube(x, y, z);
+            console.log('JSGame: Test - Created random cube');
+        }
     }
 
     testMoveProp() {
-        // if (this.engine) {
-        //     const propIndex = 0; // Move the first prop
-        //     const x = (Math.random() - 0.5) * 8;
-        //     const y = (Math.random() - 0.5) * 8;
-        //     const z = Math.random() * 2;
-        //
-        //     this.engine.moveProp(propIndex, x, y, z);
-        //     console.log('JSGame: Test - Moved prop');
-        // }
+        if (this.engine) {
+            const propIndex = 0; // Move the first prop
+            const x = (Math.random() - 0.5) * 8;
+            const y = (Math.random() - 0.5) * 8;
+            const z = Math.random() * 2;
+
+            this.engine.moveProp(propIndex, x, y, z);
+            console.log('JSGame: Test - Moved prop');
+        }
     }
 
     testCameraShake() {
-        // if (this.engine) {
-        //     const shakeX = (Math.random() - 0.5) * 0.2;
-        //     const shakeY = (Math.random() - 0.5) * 0.2;
-        //     const shakeZ = (Math.random() - 0.5) * 0.1;
-        //
-        //     this.engine.moveCamera(shakeX, shakeY, shakeZ);
-        //     console.log('JSGame: Test - Camera shake');
-        // }
+        if (this.engine) {
+            const shakeX = (Math.random() - 0.5) * 0.2;
+            const shakeY = (Math.random() - 0.5) * 0.2;
+            const shakeZ = (Math.random() - 0.5) * 0.1;
+
+            this.engine.moveCamera(shakeX, shakeY, shakeZ);
+            console.log('JSGame: Test - Camera shake');
+        }
     }
 }
 

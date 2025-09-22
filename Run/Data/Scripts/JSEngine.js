@@ -248,9 +248,9 @@ class JSEngine {
         return false;
     }
 
-    renderCppEngine(gameDeltaSeconds, systemDeltaSeconds) {
+    renderCppEngine() {
         if (typeof game !== 'undefined' && game.render) {
-            game.render(gameDeltaSeconds || 0.0, systemDeltaSeconds || 0.0);
+            game.render();
             return true;
         }
         console.warn('JSEngine: C++ game.render not available');

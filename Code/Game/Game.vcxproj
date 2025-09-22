@@ -293,7 +293,6 @@
     <ClCompile Include="Framework/ScriptReloader.cpp" />
     <!-- Game Subsystems -->
     <!-- Lighting subsystem for dynamic scene illumination -->
-    <ClCompile Include="Subsystem/Light/LightSubsystem.cpp" />
   </ItemGroup>
   <!-- //////////////////////////////////////////////////////////////////////////////////////////////// -->
   <!-- GAME HEADER FILES -->
@@ -324,7 +323,6 @@
     <ClInclude Include="Framework/ScriptReloader.hpp" />
     <!-- Game Subsystems Headers -->
     <!-- Lighting subsystem for scene illumination management -->
-    <ClInclude Include="Subsystem/Light/LightSubsystem.hpp" />
   </ItemGroup>
   <!-- //////////////////////////////////////////////////////////////////////////////////////////////// -->
   <!-- DOCUMENTATION AND PROJECT FILES -->
@@ -341,7 +339,7 @@
   </ImportGroup>
   <!-- Custom Build Information Target -->
   <Target Name="ShowBuildInfo" BeforeTargets="Build">
-    <Message Text="Building FirstV8 Game Application - Configuration: $(Configuration), Platform: $(Platform)" Importance="high" />
+    <Message Text="Building Game Application - Configuration: $(Configuration), Platform: $(Platform)" Importance="high" />
     <Message Text="Output: $(TargetPath)" Importance="normal" />
     <Message Text="Working Directory: $(LocalDebuggerWorkingDirectory)" Importance="normal" />
     <Message Text="V8 Runtime will be deployed from: $(V8RedistLibPath)" Importance="normal" />

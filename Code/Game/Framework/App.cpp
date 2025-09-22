@@ -297,7 +297,7 @@ void App::Update()
         m_gameScriptInterface->ProcessPendingHotReloadEvents();
     }
 
-    g_game->Update();
+    g_game->UpdateJS();
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -312,7 +312,7 @@ void App::Render() const
     Rgba8 const clearColor = Rgba8::GREY;
 
     g_renderer->ClearScreen(clearColor, Rgba8::BLACK);
-    g_game->Render();
+    g_game->RenderJS();
 
     AABB2 const box = AABB2(Vec2::ZERO, Vec2(1600.f, 30.f));
 
@@ -410,7 +410,7 @@ void App::SetupScriptingBindings()
     g_v8Subsystem->RegisterScriptableObject("game", m_gameScriptInterface);
 
     // Initialize hot-reload system
-    std::string projectRoot = "C:/p4/Personal/SD/FirstV8/";
+    std::string projectRoot = "C:/p4/Personal/SD/ProtogameJS2D/";
     if (m_gameScriptInterface->InitializeHotReload(g_v8Subsystem, projectRoot))
     {
         DAEMON_LOG(LogScript, eLogVerbosity::Log, StringFormat("(App::SetupScriptingBindings) Hot-reload system initialized successfully"));
