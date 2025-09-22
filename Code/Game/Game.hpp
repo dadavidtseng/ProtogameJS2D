@@ -1,20 +1,15 @@
 //----------------------------------------------------------------------------------------------------
-// Game.hpp - 整合 V8Subsystem 後的版本
+// Game.hpp
 //----------------------------------------------------------------------------------------------------
 
+//----------------------------------------------------------------------------------------------------
 #pragma once
-#include "Engine/Renderer/VertexUtils.hpp"
-#include "Engine/Renderer/Vertex_PCUTBN.hpp"
-#include "Engine/Resource/ResourceHandle.hpp"
-#include <vector>
 #include <string>
-
+#include <vector>
 #include "Engine/Core/StringUtils.hpp"
+#include "Engine/Renderer/VertexUtils.hpp"
 
-struct Vertex_PCUTBN;
-class ModelResource;
-
-//----------------------------------------------------------------------------------------------------
+//-Forward-Declaration--------------------------------------------------------------------------------
 class Camera;
 class Clock;
 class Player;
@@ -35,8 +30,8 @@ public:
     ~Game();
 
     void PostInit();
-    void Update();
-    void Render();
+    void UpdateJS();
+    void RenderJS();
     bool IsAttractMode() const;
 
     // 新增：JavaScript 相關功能
@@ -54,7 +49,7 @@ public:
     void    MovePlayerCamera(Vec3 const& offset);
     Player* GetPlayer();
     void    Update(float gameDeltaSeconds, float systemDeltaSeconds);
-    void    Render(float gameDeltaSeconds, float systemDeltaSeconds);
+    void    Render() const;
 
     // 新增：控制台命令處理
     void   HandleConsoleCommands();
@@ -65,10 +60,14 @@ private:
     void UpdateFromController();
     void UpdateEntities(float gameDeltaSeconds, float systemDeltaSeconds) const;
     void RenderAttractMode() const;
+    void RenderGame() const;
     void RenderEntities() const;
+
 
     void SpawnPlayer();
     void SpawnProp();
+
+
 
 
     void SetupJavaScriptBindings();

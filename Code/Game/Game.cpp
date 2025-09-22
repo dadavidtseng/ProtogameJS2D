@@ -34,7 +34,6 @@ Game::Game()
     SpawnPlayer();
     SpawnProp();
 
-    m_gameState    = eGameState::GAME;
     m_screenCamera = new Camera();
 
     Vec2 const bottomLeft = Vec2::ZERO;
@@ -93,7 +92,7 @@ void Game::PostInit()
 }
 
 //----------------------------------------------------------------------------------------------------
-void Game::Update()
+void Game::UpdateJS()
 {
     // Temporarily disable JavaScript calls to test for buffer overrun
     // Update JavaScript framework - this will call the actual C++ Update(float,float)
@@ -116,7 +115,7 @@ void Game::Update()
 }
 
 //----------------------------------------------------------------------------------------------------
-void Game::Render()
+void Game::RenderJS()
 {
     // Temporarily disable JavaScript calls to test for buffer overrun
     // Render JavaScript framework - this will call the actual C++ Render(float,float)
@@ -662,8 +661,8 @@ void Game::Update(float gameDeltaSeconds,
                   float systemDeltaSeconds)
 {
     // Note: gameDeltaSeconds and systemDeltaSeconds are already passed in, don't recalculate
-    gameDeltaSeconds   = static_cast<float>(m_gameClock->GetDeltaSeconds());
-    systemDeltaSeconds = static_cast<float>(Clock::GetSystemClock().GetDeltaSeconds());
+    // gameDeltaSeconds   = static_cast<float>(m_gameClock->GetDeltaSeconds());
+    // systemDeltaSeconds = static_cast<float>(Clock::GetSystemClock().GetDeltaSeconds());
 
     UpdateEntities(gameDeltaSeconds, systemDeltaSeconds);
     UpdateFromKeyBoard();
@@ -674,7 +673,7 @@ void Game::Update(float gameDeltaSeconds,
     HandleConsoleCommands();
 }
 
-void Game::Render(float gameDeltaSeconds, float systemDeltaSeconds)
+void Game::Render() const
 {
     //-Start-of-Game-Camera---------------------------------------------------------------------------
 
@@ -693,7 +692,7 @@ void Game::Render(float gameDeltaSeconds, float systemDeltaSeconds)
         DebugAddScreenText(Stringf("ClientDimensions=(%.1f,%.1f)", clientDimensions.x, clientDimensions.y), Vec2(0, 40), 20.f, Vec2::ZERO, 0.f);
         DebugAddScreenText(Stringf("WindowPosition=(%.1f,%.1f)", windowPosition.x, windowPosition.y), Vec2(0, 60), 20.f, Vec2::ZERO, 0.f);
         DebugAddScreenText(Stringf("ClientPosition=(%.1f,%.1f)", clientPosition.x, clientPosition.y), Vec2(0, 80), 20.f, Vec2::ZERO, 0.f);
-        // 新增：JavaScript 狀態顯示
+
         if (g_v8Subsystem)
         {
             std::string jsStatus = g_v8Subsystem->IsInitialized() ? "JS:Initialized" : "JS:UnInitialized";

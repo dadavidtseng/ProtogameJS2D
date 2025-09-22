@@ -40,7 +40,7 @@ public:
     // Hot-reload system initialization
     bool InitializeHotReload(V8Subsystem* v8System, const std::string& projectRoot);
     void ShutdownHotReload();
-    
+
     // Thread-safe method to process pending hot-reload events on main thread
     void ProcessPendingHotReloadEvents();
 
@@ -48,19 +48,19 @@ private:
     Game* m_game; // 不擁有，只是參考
 
     // Hot-reload system components
-    std::unique_ptr<FileWatcher> m_fileWatcher;
+    std::unique_ptr<FileWatcher>    m_fileWatcher;
     std::unique_ptr<ScriptReloader> m_scriptReloader;
-    bool m_hotReloadEnabled{false};
-    std::string m_projectRoot; // Store project root for path construction
-    
+    bool                            m_hotReloadEnabled{false};
+    std::string                     m_projectRoot; // Store project root for path construction
+
     // Thread-safe event queue for main thread processing
     std::queue<std::string> m_pendingFileChanges;
-    mutable std::mutex m_fileChangeQueueMutex;
+    mutable std::mutex      m_fileChangeQueueMutex;
 
     // Hot-reload callbacks
     void OnFileChanged(const std::string& filePath);
     void OnReloadComplete(bool success, const std::string& error);
-    
+
     // Helper method to construct absolute paths (same logic as FileWatcher)
     std::string GetAbsoluteScriptPath(const std::string& relativePath) const;
 
@@ -97,7 +97,7 @@ private:
     ScriptMethodResult ExecuteIsAttractMode(const std::vector<std::any>& args);
     ScriptMethodResult ExecuteGetGameState(const std::vector<std::any>& args);
     ScriptMethodResult ExecuteGetFileTimestamp(const std::vector<std::any>& args);
-    
+
     // Hot-reload methods
     ScriptMethodResult ExecuteEnableHotReload(const std::vector<std::any>& args);
     ScriptMethodResult ExecuteDisableHotReload(const std::vector<std::any>& args);
