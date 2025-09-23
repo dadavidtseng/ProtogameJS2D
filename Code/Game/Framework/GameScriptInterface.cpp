@@ -1,5 +1,6 @@
 //----------------------------------------------------------------------------------------------------
 // GameScriptInterface.cpp
+// Optimized V8 JavaScript integration with exception-free type conversion
 //----------------------------------------------------------------------------------------------------
 
 //----------------------------------------------------------------------------------------------------
@@ -72,7 +73,7 @@ std::vector<ScriptMethodInfo> GameScriptInterface::GetAvailableMethods() const
 
         ScriptMethodInfo("update",
                          "JavaScript GameLoop Update",
-                         {},
+                         {"float", "float"},
                          "void"),
         ScriptMethodInfo("render",
                          "JavaScript GameLoop Render",
@@ -102,43 +103,7 @@ std::vector<ScriptMethodInfo> GameScriptInterface::GetAvailableMethods() const
         ScriptMethodInfo("getFileTimestamp",
                          "取得檔案的最後修改時間戳記",
                          {"string"},
-                         "number"),
-
-        // Hot-reload system methods
-        ScriptMethodInfo("enableHotReload",
-                         "啟用熱重載系統",
-                         {},
-                         "bool"),
-
-        ScriptMethodInfo("disableHotReload",
-                         "停用熱重載系統",
-                         {},
-                         "bool"),
-
-        ScriptMethodInfo("isHotReloadEnabled",
-                         "檢查熱重載系統是否啟用",
-                         {},
-                         "bool"),
-
-        ScriptMethodInfo("addWatchedFile",
-                         "新增要監控的檔案",
-                         {"string"},
-                         "bool"),
-
-        ScriptMethodInfo("removeWatchedFile",
-                         "移除監控的檔案",
-                         {"string"},
-                         "bool"),
-
-        ScriptMethodInfo("getWatchedFiles",
-                         "取得目前監控的檔案清單",
-                         {},
-                         "string"),
-
-        ScriptMethodInfo("reloadScript",
-                         "手動重載指定的腳本檔案",
-                         {"string"},
-                         "bool")
+                         "number")
     };
 }
 
@@ -264,15 +229,18 @@ bool GameScriptInterface::SetProperty(const std::string& propertyName, const std
 }
 
 //----------------------------------------------------------------------------------------------------
-ScriptMethodResult GameScriptInterface::ExecuteCreateCube(const std::vector<std::any>& args)
+ScriptMethodResult GameScriptInterface::ExecuteCreateCube(std::vector<std::any> const& args)
 {
-    auto result = ValidateArgCount(args, 3, "createCube");
+    ScriptMethodResult result = ValidateArgCount(args, 3, "createCube");
+
     if (!result.success) return result;
 
     try
     {
-        Vec3 position = ExtractVec3(args, 0);
+        Vec3 const position = ExtractVec3(args, 0);
+
         m_game->CreateCube(position);
+
         return ScriptMethodResult::Success(std::string("立方體創建成功，位置: (" +
             std::to_string(position.x) + ", " +
             std::to_string(position.y) + ", " +
@@ -374,17 +342,16 @@ ScriptMethodResult GameScriptInterface::ExecuteRender(std::vector<std::any> cons
     }
 }
 
-ScriptMethodResult GameScriptInterface::ExecuteUpdate(const std::vector<std::any>& args)
+ScriptMethodResult GameScriptInterface::ExecuteUpdate(std::vector<std::any> const& args)
 {
     auto result = ValidateArgCount(args, 2, "Update");
     if (!result.success) return result;
 
     try
     {
-        float deltaTimeMs = ExtractFloat(args[0]);
-        // Convert milliseconds to seconds for gameDeltaSeconds
-        float gameDeltaSeconds   = deltaTimeMs;
-        float systemDeltaSeconds = static_cast<float>(Clock::GetSystemClock().GetDeltaSeconds());
+        float gameDeltaSeconds   = ExtractFloat(args[0]);
+        float systemDeltaSeconds = ExtractFloat(args[1]);
+
         m_game->Update(gameDeltaSeconds, systemDeltaSeconds);
         return ScriptMethodResult::Success(Stringf("Update Success"));
     }
@@ -471,11 +438,12 @@ ScriptMethodResult GameScriptInterface::ExecuteGetGameState(const std::vector<st
 template <typename T>
 T GameScriptInterface::ExtractArg(const std::any& arg, const std::string& expectedType) const
 {
-    try
+    // Use type-safe extraction to avoid std::bad_any_cast exceptions
+    if (HasType<T>(arg))
     {
-        return std::any_cast<T>(arg);
+        return SafeCast<T>(arg);
     }
-    catch (const std::bad_any_cast& e)
+    else
     {
         std::string typeInfo = expectedType.empty() ? typeid(T).name() : expectedType;
         throw std::invalid_argument("參數類型錯誤，期望: " + typeInfo);
@@ -500,28 +468,52 @@ Vec3 GameScriptInterface::ExtractVec3(const std::vector<std::any>& args, size_t 
 //----------------------------------------------------------------------------------------------------
 float GameScriptInterface::ExtractFloat(const std::any& arg) const
 {
-    // 嘗試多種數值類型的轉換
     try
     {
-        return std::any_cast<float>(arg);
-    }
-    catch (const std::bad_any_cast&)
-    {
-        try
+        // V8 always passes JavaScript numbers as double, so check double first
+        if (HasType<double>(arg))
         {
-            return static_cast<float>(std::any_cast<double>(arg));
+            return static_cast<float>(SafeCast<double>(arg));
         }
-        catch (const std::bad_any_cast&)
+        else if (HasType<float>(arg))
         {
+            return SafeCast<float>(arg);
+        }
+        else if (HasType<int>(arg))
+        {
+            return static_cast<float>(SafeCast<int>(arg));
+        }
+        else if (HasType<long>(arg))
+        {
+            return static_cast<float>(SafeCast<long>(arg));
+        }
+        else if (HasType<unsigned int>(arg))
+        {
+            return static_cast<float>(SafeCast<unsigned int>(arg));
+        }
+        else
+        {
+            // Try direct cast as last resort
             try
             {
-                return static_cast<float>(std::any_cast<int>(arg));
+                return std::any_cast<float>(arg);
             }
             catch (const std::bad_any_cast&)
             {
-                throw std::invalid_argument("無法轉換為 float 類型");
+                try
+                {
+                    return static_cast<float>(std::any_cast<double>(arg));
+                }
+                catch (const std::bad_any_cast&)
+                {
+                    throw std::invalid_argument("無法轉換為 float 類型");
+                }
             }
         }
+    }
+    catch (const std::bad_any_cast& e)
+    {
+        throw std::invalid_argument("ExtractFloat: bad_any_cast - " + std::string(e.what()));
     }
 }
 
@@ -530,25 +522,50 @@ int GameScriptInterface::ExtractInt(const std::any& arg) const
 {
     try
     {
-        return std::any_cast<int>(arg);
-    }
-    catch (const std::bad_any_cast&)
-    {
-        try
+        // V8 always passes JavaScript numbers as double, so check double first
+        if (HasType<double>(arg))
         {
-            return static_cast<int>(std::any_cast<float>(arg));
+            return static_cast<int>(SafeCast<double>(arg));
         }
-        catch (const std::bad_any_cast&)
+        else if (HasType<int>(arg))
         {
+            return SafeCast<int>(arg);
+        }
+        else if (HasType<float>(arg))
+        {
+            return static_cast<int>(SafeCast<float>(arg));
+        }
+        else if (HasType<long>(arg))
+        {
+            return static_cast<int>(SafeCast<long>(arg));
+        }
+        else if (HasType<unsigned int>(arg))
+        {
+            return static_cast<int>(SafeCast<unsigned int>(arg));
+        }
+        else
+        {
+            // Try direct cast as last resort
             try
             {
-                return static_cast<int>(std::any_cast<double>(arg));
+                return std::any_cast<int>(arg);
             }
             catch (const std::bad_any_cast&)
             {
-                throw std::invalid_argument("無法轉換為 int 類型");
+                try
+                {
+                    return static_cast<int>(std::any_cast<double>(arg));
+                }
+                catch (const std::bad_any_cast&)
+                {
+                    throw std::invalid_argument("無法轉換為 int 類型");
+                }
             }
         }
+    }
+    catch (const std::bad_any_cast& e)
+    {
+        throw std::invalid_argument("ExtractInt: bad_any_cast - " + std::string(e.what()));
     }
 }
 
@@ -557,19 +574,37 @@ std::string GameScriptInterface::ExtractString(const std::any& arg) const
 {
     try
     {
-        return std::any_cast<std::string>(arg);
-    }
-    catch (const std::bad_any_cast&)
-    {
-        try
+        // V8 passes JavaScript strings as std::string
+        if (HasType<std::string>(arg))
         {
-            const char* cstr = std::any_cast<const char*>(arg);
+            return SafeCast<std::string>(arg);
+        }
+        else if (HasType<const char*>(arg))
+        {
+            const char* cstr = SafeCast<const char*>(arg);
             return std::string(cstr);
         }
-        catch (const std::bad_any_cast&)
+        else if (HasType<char*>(arg))
         {
-            throw std::invalid_argument("無法轉換為 string 類型");
+            char* cstr = SafeCast<char*>(arg);
+            return std::string(cstr);
         }
+        else
+        {
+            // Try direct cast as last resort
+            try
+            {
+                return std::any_cast<std::string>(arg);
+            }
+            catch (const std::bad_any_cast&)
+            {
+                throw std::invalid_argument("無法轉換為 string 類型");
+            }
+        }
+    }
+    catch (const std::bad_any_cast& e)
+    {
+        throw std::invalid_argument("ExtractString: bad_any_cast - " + std::string(e.what()));
     }
 }
 
@@ -578,20 +613,44 @@ bool GameScriptInterface::ExtractBool(const std::any& arg) const
 {
     try
     {
-        return std::any_cast<bool>(arg);
-    }
-    catch (const std::bad_any_cast&)
-    {
-        try
+        // V8 passes JavaScript booleans as bool type
+        if (HasType<bool>(arg))
         {
-            // 嘗試從數值轉換
-            int val = std::any_cast<int>(arg);
+            return SafeCast<bool>(arg);
+        }
+        else if (HasType<int>(arg))
+        {
+            // Convert numeric values to boolean (0 = false, non-zero = true)
+            int val = SafeCast<int>(arg);
             return val != 0;
         }
-        catch (const std::bad_any_cast&)
+        else if (HasType<double>(arg))
         {
-            throw std::invalid_argument("無法轉換為 bool 類型");
+            // Convert V8 numbers to boolean (0.0 = false, non-zero = true)
+            double val = SafeCast<double>(arg);
+            return val != 0.0;
         }
+        else if (HasType<float>(arg))
+        {
+            float val = SafeCast<float>(arg);
+            return val != 0.0f;
+        }
+        else
+        {
+            // Try direct cast as last resort
+            try
+            {
+                return std::any_cast<bool>(arg);
+            }
+            catch (const std::bad_any_cast&)
+            {
+                throw std::invalid_argument("無法轉換為 bool 類型");
+            }
+        }
+    }
+    catch (const std::bad_any_cast& e)
+    {
+        throw std::invalid_argument("ExtractBool: bad_any_cast - " + std::string(e.what()));
     }
 }
 
@@ -667,7 +726,8 @@ ScriptMethodResult GameScriptInterface::ExecuteGetFileTimestamp(const std::vecto
 //----------------------------------------------------------------------------------------------------
 // Hot-reload system initialization
 //----------------------------------------------------------------------------------------------------
-bool GameScriptInterface::InitializeHotReload(V8Subsystem* v8System, const std::string& projectRoot)
+bool GameScriptInterface::InitializeHotReload(V8Subsystem*       v8System,
+                                              String const& projectRoot)
 {
     try
     {
@@ -711,7 +771,7 @@ bool GameScriptInterface::InitializeHotReload(V8Subsystem* v8System, const std::
         DAEMON_LOG(LogScript, eLogVerbosity::Log, StringFormat("GameScriptInterface: Hot-reload system initialized successfully"));
         return true;
     }
-    catch (const std::exception& e)
+    catch (std::exception const& e)
     {
         DAEMON_LOG(LogScript, eLogVerbosity::Error, StringFormat("GameScriptInterface: Hot-reload initialization failed: {}", e.what()));
         return false;
@@ -722,7 +782,7 @@ void GameScriptInterface::ShutdownHotReload()
 {
     try
     {
-        if (m_fileWatcher)
+        if (m_fileWatcher != nullptr)
         {
             m_fileWatcher->Shutdown();
         }

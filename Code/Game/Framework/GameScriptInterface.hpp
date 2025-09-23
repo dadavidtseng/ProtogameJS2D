@@ -68,12 +68,37 @@ private:
     template <typename T>
     T ExtractArg(const std::any& arg, const std::string& expectedType = "") const;
 
-    // 專門的類型提取方法
+    // 專門的類型提取方法 (optimized for V8 integration)
     Vec3        ExtractVec3(const std::vector<std::any>& args, size_t startIndex) const;
     float       ExtractFloat(const std::any& arg) const;
     int         ExtractInt(const std::any& arg) const;
     std::string ExtractString(const std::any& arg) const;
     bool        ExtractBool(const std::any& arg) const;
+
+    // TypeSafe extraction utilities (eliminates std::bad_any_cast exceptions)
+    template <typename T>
+    bool HasType(std::any const& arg) const
+    {
+        return arg.type() == typeid(T);
+    }
+
+    template <typename T>
+    T SafeCast(const std::any& arg) const
+    {
+        try
+        {
+            if (HasType<T>(arg))
+            {
+                return std::any_cast<T>(arg);
+            }
+            // Try to cast anyway in case of edge cases
+            return std::any_cast<T>(arg);
+        }
+        catch (const std::bad_any_cast& e)
+        {
+            throw std::invalid_argument("Type mismatch in SafeCast: " + std::string(e.what()));
+        }
+    }
 
     // 參數驗證輔助方法
     ScriptMethodResult ValidateArgCount(const std::vector<std::any>& args,
