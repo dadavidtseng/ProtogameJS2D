@@ -4,8 +4,8 @@
 
 //----------------------------------------------------------------------------------------------------
 #pragma once
-#include <string>
 #include <vector>
+
 #include "Engine/Core/StringUtils.hpp"
 #include "Engine/Renderer/VertexUtils.hpp"
 
@@ -34,16 +34,15 @@ public:
     void RenderJS();
     bool IsAttractMode() const;
 
-    // 新增：JavaScript 相關功能
     void ExecuteJavaScriptCommand(String const& command);
     void ExecuteJavaScriptFile(String const& filename);
     void HandleJavaScriptCommands();
 
     // SCRIPT REGISTRY: Chrome DevTools selective integration
-    void ExecuteJavaScriptCommandForDebug(const std::string& command, const std::string& scriptName);
-    void ExecuteJavaScriptFileForDebug(const std::string& filename);
+    void ExecuteJavaScriptCommandForDebug(String const& command, String const& scriptName);
+    void ExecuteJavaScriptFileForDebug(String const& filename);
 
-    // 新增：JavaScript 回呼函數需要的遊戲功能
+    // JavaScript callback functions
     void    CreateCube(Vec3 const& position);
     void    MoveProp(int propIndex, Vec3 const& newPosition);
     void    MovePlayerCamera(Vec3 const& offset);
@@ -52,8 +51,7 @@ public:
     void    Render() const;
 
     // 新增：控制台命令處理
-    void   HandleConsoleCommands();
-    Clock* m_gameClock = nullptr;
+    void HandleConsoleCommands();
 
 private:
     void UpdateFromKeyBoard();
@@ -63,29 +61,22 @@ private:
     void RenderGame() const;
     void RenderEntities() const;
 
-
     void SpawnPlayer();
-    void SpawnProp();
-
-
+    void InitPlayer() const;
+    void SpawnProps();
+    void InitProps() const;
 
 
     void SetupJavaScriptBindings();
     void InitializeJavaScriptFramework();
 
-    Camera* m_screenCamera = nullptr;
-    Player* m_player       = nullptr;
-    Prop*   m_firstCube    = nullptr;
-    Prop*   m_secondCube   = nullptr;
-    Prop*   m_sphere       = nullptr;
-    Prop*   m_grid         = nullptr;
+    Camera*            m_screenCamera = nullptr;
+    Player*            m_player       = nullptr;
+    std::vector<Prop*> m_props;
+    Clock*             m_gameClock = nullptr;
+    eGameState         m_gameState = eGameState::ATTRACT;
 
-    eGameState m_gameState = eGameState::ATTRACT;
 
-    // 新增：物件管理
-    std::vector<Prop*> m_props;  // 用於 JavaScript 管理的物件清單
-
-    // 新增：JavaScript 狀態
     bool m_hasInitializedJS = false;
     bool m_hasRunJSTests    = false;
 

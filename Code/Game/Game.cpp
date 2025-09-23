@@ -30,9 +30,12 @@
 //----------------------------------------------------------------------------------------------------
 Game::Game()
 {
-    DAEMON_LOG(LogGame, eLogVerbosity::Log, Stringf("(Game::Game)(start)"));
+    DAEMON_LOG(LogGame, eLogVerbosity::Log, StringFormat("(Game::Game)(start)"));
+
     SpawnPlayer();
-    SpawnProp();
+    InitPlayer();
+    SpawnProps();
+    InitProps();
 
     m_screenCamera = new Camera();
 
@@ -44,12 +47,8 @@ Game::Game()
     m_screenCamera->SetNormalizedViewport(AABB2::ZERO_TO_ONE);
     m_gameClock = new Clock(Clock::GetSystemClock());
 
-    m_player->m_position     = Vec3(-2.f, 0.f, 1.f);
-    m_firstCube->m_position  = Vec3(2.f, 2.f, 0.f);
-    m_secondCube->m_position = Vec3(-2.f, -2.f, 0.f);
-    m_sphere->m_position     = Vec3(10, -5, 1);
-    m_grid->m_position       = Vec3::ZERO;
 
+#if defined(ENGINE_DEBUG_RENDER)
     DebugAddWorldBasis(Mat44(), -1.f);
 
     Mat44 transform;
@@ -63,25 +62,22 @@ Game::Game()
     transform.SetIJKT3D(-Vec3::X_BASIS, Vec3::Z_BASIS, Vec3::Y_BASIS, Vec3(0.f, -0.25f, 0.25f));
     DebugAddWorldText("Z-Up", transform, 0.25f, Vec2(1.f, 0.f), -1.f, Rgba8::BLUE);
 
-    DAEMON_LOG(LogGame, eLogVerbosity::Log, "(Game::Game)(end)");
+    DAEMON_LOG(LogGame, eLogVerbosity::Log, StringFormat("(Game::Game)(end)"));
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------
 Game::~Game()
 {
-    DAEMON_LOG(LogGame, eLogVerbosity::Log, "(Game::~Game)(start)");
+    DAEMON_LOG(LogGame, eLogVerbosity::Log, StringFormat("(Game::~Game)(start)"));
 
     m_props.clear();
 
     GAME_SAFE_RELEASE(m_gameClock);
-    GAME_SAFE_RELEASE(m_grid);
-    GAME_SAFE_RELEASE(m_sphere);
-    GAME_SAFE_RELEASE(m_secondCube);
-    GAME_SAFE_RELEASE(m_firstCube);
     GAME_SAFE_RELEASE(m_player);
     GAME_SAFE_RELEASE(m_screenCamera);
 
-    DAEMON_LOG(LogGame, eLogVerbosity::Display, "Game::~Game() end");
+    DAEMON_LOG(LogGame, eLogVerbosity::Log, StringFormat("Game::~Game() end"));
 }
 
 
@@ -94,21 +90,12 @@ void Game::PostInit()
 //----------------------------------------------------------------------------------------------------
 void Game::UpdateJS()
 {
-    // Temporarily disable JavaScript calls to test for buffer overrun
-    // Update JavaScript framework - this will call the actual C++ Update(float,float)
     if (m_hasInitializedJS && g_v8Subsystem && g_v8Subsystem->IsInitialized())
     {
-        float       deltaTimeMs = static_cast<float>(m_gameClock->GetDeltaSeconds() * 1000.0f);
-        std::string updateCmd   = "globalThis.JSEngine.update(" + std::to_string(deltaTimeMs) + ");";
-        ExecuteJavaScriptCommand(updateCmd);
+        float const gameDeltaSeconds   = static_cast<float>(m_gameClock->GetDeltaSeconds());
+        float const systemDeltaSeconds = static_cast<float>(Clock::GetSystemClock().GetDeltaSeconds());
+        ExecuteJavaScriptCommand(StringFormat("globalThis.JSEngine.update({}, {});", std::to_string(gameDeltaSeconds), std::to_string(systemDeltaSeconds)));
     }
-    // else
-    // {
-    //     // // Fallback: call the overloaded update directly if JS framework isn't ready
-    //     // float const gameDeltaSeconds   = static_cast<float>(m_gameClock->GetDeltaSeconds());
-    //     // float const systemDeltaSeconds = static_cast<float>(Clock::GetSystemClock().GetDeltaSeconds());
-    //     // Update(gameDeltaSeconds, systemDeltaSeconds);
-    // }
 
     // Handle additional JavaScript commands via keyboard
     // HandleJavaScriptCommands();
@@ -117,19 +104,10 @@ void Game::UpdateJS()
 //----------------------------------------------------------------------------------------------------
 void Game::RenderJS()
 {
-    // Temporarily disable JavaScript calls to test for buffer overrun
-    // Render JavaScript framework - this will call the actual C++ Render(float,float)
     if (m_hasInitializedJS && g_v8Subsystem && g_v8Subsystem->IsInitialized())
     {
-        ExecuteJavaScriptCommand("globalThis.JSEngine.render();");
+        ExecuteJavaScriptCommand(StringFormat("globalThis.JSEngine.render();"));
     }
-    // else
-    // {
-    //     // // Fallback: call the overloaded render directly if JS framework isn't ready
-    //     // float const gameDeltaSeconds   = static_cast<float>(m_gameClock->GetDeltaSeconds());
-    //     // float const systemDeltaSeconds = static_cast<float>(Clock::GetSystemClock().GetDeltaSeconds());
-    //     // Render(gameDeltaSeconds, systemDeltaSeconds);
-    // }
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -156,10 +134,6 @@ void Game::UpdateFromKeyBoard()
 
     if (m_gameState == eGameState::GAME)
     {
-        if (g_input->WasKeyJustPressed(KEYCODE_G))
-        {
-            DAEMON_LOG(LogTemp, eLogVerbosity::Warning, "G");
-        }
         if (g_input->WasKeyJustPressed(KEYCODE_ESC))
         {
             m_gameState = eGameState::ATTRACT;
@@ -300,15 +274,14 @@ void Game::UpdateFromController()
 }
 
 //----------------------------------------------------------------------------------------------------
-void Game::UpdateEntities(float const gameDeltaSeconds, float const systemDeltaSeconds) const
+void Game::UpdateEntities(float const gameDeltaSeconds,
+                          float const systemDeltaSeconds) const
 {
-    // 更新玩家
     if (m_player)
     {
-        m_player->Update(gameDeltaSeconds);
+        m_player->Update(systemDeltaSeconds);
     }
 
-    // 更新所有物件
     for (Prop* prop : m_props)
     {
         if (prop)
@@ -316,25 +289,23 @@ void Game::UpdateEntities(float const gameDeltaSeconds, float const systemDeltaS
             prop->Update(gameDeltaSeconds);
         }
     }
-    // m_player->Update(systemDeltaSeconds);
-    // m_firstCube->Update(gameDeltaSeconds);
-    // m_secondCube->Update(gameDeltaSeconds);
-    // m_sphere->Update(gameDeltaSeconds);
-    // m_grid->Update(gameDeltaSeconds);
 
-    m_firstCube->m_orientation.m_pitchDegrees += 30.f * gameDeltaSeconds;
-    m_firstCube->m_orientation.m_rollDegrees += 30.f * gameDeltaSeconds;
+    m_props[0]->m_orientation.m_pitchDegrees += 30.f * gameDeltaSeconds;
+    m_props[0]->m_orientation.m_rollDegrees += 30.f * gameDeltaSeconds;
 
     float const time       = static_cast<float>(m_gameClock->GetTotalSeconds());
     float const colorValue = (sinf(time) + 1.0f) * 0.5f * 255.0f;
 
-    m_secondCube->m_color.r = static_cast<unsigned char>(colorValue);
-    m_secondCube->m_color.g = static_cast<unsigned char>(colorValue);
-    m_secondCube->m_color.b = static_cast<unsigned char>(colorValue);
+    m_props[1]->m_color.r = static_cast<unsigned char>(colorValue);
+    m_props[1]->m_color.g = static_cast<unsigned char>(colorValue);
+    m_props[1]->m_color.b = static_cast<unsigned char>(colorValue);
 
-    m_sphere->m_orientation.m_yawDegrees += 45.f * gameDeltaSeconds;
+    m_props[2]->m_orientation.m_yawDegrees += 45.f * gameDeltaSeconds;
 
-    DebugAddScreenText(Stringf("Time: %.2f\nFPS: %.2f\nScale: %.1f", m_gameClock->GetTotalSeconds(), 1.f / m_gameClock->GetDeltaSeconds(), m_gameClock->GetTimeScale()), m_screenCamera->GetOrthographicTopRight() - Vec2(250.f, 60.f), 20.f, Vec2::ZERO, 0.f, Rgba8::WHITE, Rgba8::WHITE);
+    DebugAddScreenText(Stringf("GameTime:   %.2f", m_gameClock->GetTotalSeconds()), m_screenCamera->GetOrthographicTopRight() - Vec2(500.f, 20.f), 20.f, Vec2::ZERO, 0.f, Rgba8::WHITE, Rgba8::WHITE);
+    DebugAddScreenText(Stringf("SystemTime: %.2f", Clock::GetSystemClock().GetTotalSeconds()), m_screenCamera->GetOrthographicTopRight() - Vec2(500.f, 40.f), 20.f, Vec2::ZERO, 0.f, Rgba8::WHITE, Rgba8::WHITE);
+    DebugAddScreenText(Stringf("FPS:        %.2f", 1.f / m_gameClock->GetDeltaSeconds()), m_screenCamera->GetOrthographicTopRight() - Vec2(500.f, 60.f), 20.f, Vec2::ZERO, 0.f, Rgba8::WHITE, Rgba8::WHITE);
+    DebugAddScreenText(Stringf("Scale:      %.2f", m_gameClock->GetTimeScale()), m_screenCamera->GetOrthographicTopRight() - Vec2(500.f, 80.f), 20.f, Vec2::ZERO, 0.f, Rgba8::WHITE, Rgba8::WHITE);
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -354,14 +325,33 @@ void Game::RenderAttractMode() const
     g_renderer->DrawVertexArray(verts);
 }
 
+void Game::RenderGame() const
+{
+    Vec2 const clientDimensions = Window::s_mainWindow->GetClientDimensions();
+    Vec2 const offsetFromCorner = Vec2(200.f, 100.f);
+    Vec2 const topRight         = clientDimensions - offsetFromCorner;
+    Vec2 const bottomLeft       = offsetFromCorner;
+    Vec2 const topLeft          = Vec2(offsetFromCorner.x, clientDimensions.y - offsetFromCorner.y);
+    Vec2 const bottomRight      = Vec2(clientDimensions.x - offsetFromCorner.x, offsetFromCorner.y);
+
+    VertexList_PCU verts;
+
+    AddVertsForLineSegment2D(verts, topRight, bottomLeft, 10.f, false, Rgba8::GREEN);
+    AddVertsForLineSegment2D(verts, topLeft, bottomRight, 10.f, false, Rgba8::GREEN);
+
+    g_renderer->SetModelConstants();
+    g_renderer->SetBlendMode(eBlendMode::OPAQUE);
+    g_renderer->SetRasterizerMode(eRasterizerMode::SOLID_CULL_BACK);
+    g_renderer->SetSamplerMode(eSamplerMode::BILINEAR_CLAMP);
+    g_renderer->SetDepthMode(eDepthMode::DISABLED);
+    g_renderer->BindTexture(nullptr);
+    g_renderer->BindShader(g_renderer->CreateOrGetShaderFromFile("Data/Shaders/Default"));
+    g_renderer->DrawVertexArray(verts);
+}
+
 //----------------------------------------------------------------------------------------------------
 void Game::RenderEntities() const
 {
-    m_firstCube->Render();
-    m_secondCube->Render();
-    m_sphere->Render();
-    m_grid->Render();
-
     g_renderer->SetModelConstants(m_player->GetModelToWorldTransform());
     m_player->Render();
 
@@ -378,24 +368,41 @@ void Game::SpawnPlayer()
 }
 
 //----------------------------------------------------------------------------------------------------
-void Game::SpawnProp()
+void Game::InitPlayer() const
+{
+    m_player->m_position = Vec3(-2.f, 0.f, 1.f);
+}
+
+//----------------------------------------------------------------------------------------------------
+void Game::SpawnProps()
 {
     Texture const* texture = g_renderer->CreateOrGetTextureFromFile("Data/Images/TestUV.png");
 
-    m_firstCube  = new Prop(this);
-    m_secondCube = new Prop(this);
-    m_sphere     = new Prop(this, texture);
-    m_grid       = new Prop(this);
+    m_props.reserve(4);
 
-    m_firstCube->InitializeLocalVertsForCube();
-    m_secondCube->InitializeLocalVertsForCube();
-    m_sphere->InitializeLocalVertsForSphere();
-    m_grid->InitializeLocalVertsForGrid();
+    Prop* prop1 = new Prop(this);
+    Prop* prop2 = new Prop(this);
+    Prop* prop3 = new Prop(this, texture);
+    Prop* prop4 = new Prop(this);
 
-    if (m_firstCube) m_props.push_back(m_firstCube);
-    if (m_secondCube) m_props.push_back(m_secondCube);
-    if (m_sphere) m_props.push_back(m_sphere);
-    if (m_grid) m_props.push_back(m_grid);
+    if (prop1 != nullptr) m_props.push_back(prop1);
+    if (prop2 != nullptr) m_props.push_back(prop2);
+    if (prop3 != nullptr) m_props.push_back(prop3);
+    if (prop4 != nullptr) m_props.push_back(prop4);
+}
+
+//----------------------------------------------------------------------------------------------------
+void Game::InitProps() const
+{
+    m_props[0]->InitializeLocalVertsForCube();
+    m_props[1]->InitializeLocalVertsForCube();
+    m_props[2]->InitializeLocalVertsForSphere();
+    m_props[3]->InitializeLocalVertsForGrid();
+
+    m_props[0]->m_position = Vec3(2.f, 2.f, 0.f);
+    m_props[1]->m_position = Vec3(-2.f, -2.f, 0.f);
+    m_props[2]->m_position = Vec3(10, -5, 1);
+    m_props[3]->m_position = Vec3::ZERO;
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -657,13 +664,10 @@ Player* Game::GetPlayer()
     return m_player;
 }
 
-void Game::Update(float gameDeltaSeconds,
-                  float systemDeltaSeconds)
+//----------------------------------------------------------------------------------------------------
+void Game::Update(float const gameDeltaSeconds,
+                  float const systemDeltaSeconds)
 {
-    // Note: gameDeltaSeconds and systemDeltaSeconds are already passed in, don't recalculate
-    // gameDeltaSeconds   = static_cast<float>(m_gameClock->GetDeltaSeconds());
-    // systemDeltaSeconds = static_cast<float>(Clock::GetSystemClock().GetDeltaSeconds());
-
     UpdateEntities(gameDeltaSeconds, systemDeltaSeconds);
     UpdateFromKeyBoard();
     UpdateFromController();
@@ -682,17 +686,21 @@ void Game::Render() const
     if (m_gameState == eGameState::GAME)
     {
         RenderEntities();
+
+        // RenderGame();
+#if defined(ENGINE_DEBUG_RENDER)
         Vec2 screenDimensions = Window::s_mainWindow->GetScreenDimensions();
         Vec2 windowDimensions = Window::s_mainWindow->GetWindowDimensions();
         Vec2 clientDimensions = Window::s_mainWindow->GetClientDimensions();
         Vec2 windowPosition   = Window::s_mainWindow->GetWindowPosition();
         Vec2 clientPosition   = Window::s_mainWindow->GetClientPosition();
+
         DebugAddScreenText(Stringf("ScreenDimensions=(%.1f,%.1f)", screenDimensions.x, screenDimensions.y), Vec2(0, 0), 20.f, Vec2::ZERO, 0.f);
         DebugAddScreenText(Stringf("WindowDimensions=(%.1f,%.1f)", windowDimensions.x, windowDimensions.y), Vec2(0, 20), 20.f, Vec2::ZERO, 0.f);
         DebugAddScreenText(Stringf("ClientDimensions=(%.1f,%.1f)", clientDimensions.x, clientDimensions.y), Vec2(0, 40), 20.f, Vec2::ZERO, 0.f);
         DebugAddScreenText(Stringf("WindowPosition=(%.1f,%.1f)", windowPosition.x, windowPosition.y), Vec2(0, 60), 20.f, Vec2::ZERO, 0.f);
         DebugAddScreenText(Stringf("ClientPosition=(%.1f,%.1f)", clientPosition.x, clientPosition.y), Vec2(0, 80), 20.f, Vec2::ZERO, 0.f);
-
+#endif
         if (g_v8Subsystem)
         {
             std::string jsStatus = g_v8Subsystem->IsInitialized() ? "JS:Initialized" : "JS:UnInitialized";
@@ -700,7 +708,7 @@ void Game::Render() const
 
             if (g_v8Subsystem->HasError())
             {
-                DebugAddScreenText("JS錯誤: " + g_v8Subsystem->GetLastError(), Vec2(0, 120), 15.f, Vec2::ZERO, 0.f, Rgba8::RED);
+                DebugAddScreenText("JS Error: " + g_v8Subsystem->GetLastError(), Vec2(0, 120), 15.f, Vec2::ZERO, 0.f, Rgba8::RED);
             }
         }
     }
