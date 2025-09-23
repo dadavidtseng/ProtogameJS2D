@@ -336,7 +336,8 @@ STATIC std::any App::OnPrint(std::vector<std::any> const& args)
 {
     if (!args.empty())
     {
-        try
+        // Use type-safe extraction to avoid std::bad_any_cast exceptions
+        if (args[0].type() == typeid(std::string))
         {
             std::string message = std::any_cast<std::string>(args[0]);
             DebuggerPrintf("JS: %s\n", message.c_str());
@@ -346,7 +347,7 @@ STATIC std::any App::OnPrint(std::vector<std::any> const& args)
                 g_devConsole->AddLine(DevConsole::INFO_MINOR, "JS: " + message);
             }
         }
-        catch (std::bad_any_cast const&)
+        else
         {
             DebuggerPrintf("JS: [無法轉換的物件]\n");
         }
@@ -358,12 +359,13 @@ std::any App::OnDebug(std::vector<std::any> const& args)
 {
     if (!args.empty())
     {
-        try
+        // Use type-safe extraction to avoid std::bad_any_cast exceptions
+        if (args[0].type() == typeid(std::string))
         {
             std::string message = std::any_cast<std::string>(args[0]);
             DebuggerPrintf("JS DEBUG: %s\n", message.c_str());
         }
-        catch (std::bad_any_cast const&)
+        else
         {
             DebuggerPrintf("JS DEBUG: [無法轉換的物件]\n");
         }
