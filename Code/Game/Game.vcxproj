@@ -44,7 +44,7 @@
         <V8RedistLibPath>$(SolutionDir)../Engine/Code/ThirdParty/packages/v8.redist-v143-x64.13.0.245.25/lib/$(Configuration)/</V8RedistLibPath>
         <!-- Script Module Configuration: Enable/disable V8 JavaScript integration -->
         <!-- Set to 'true' to include V8 runtime deployment, 'false' to deploy executable only -->
-        <EnableScriptModule>false</EnableScriptModule>
+        <EnableScriptModule>true</EnableScriptModule>
     </PropertyGroup>
     <!-- //////////////////////////////////////////////////////////////////////////////////////////////// -->
     <!-- CONFIGURATION-SPECIFIC PROPERTIES -->
