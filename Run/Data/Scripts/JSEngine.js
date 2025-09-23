@@ -193,7 +193,7 @@ class JSEngine {
      * Update method - called by C++ engine
      * Now processes both game and registered systems
      */
-    update(deltaTime) {
+    update(gameDeltaSeconds, systemDeltaSeconds) {
         if (!this.isInitialized) {
             return;
         }
@@ -205,7 +205,8 @@ class JSEngine {
         for (const system of this.updateSystems) {
             if (system.enabled && system.update) {
                 try {
-                    system.update(deltaTime);
+                    // Pass both gameDeltaSeconds and systemDeltaSeconds to allow systems to choose
+                    system.update(gameDeltaSeconds, systemDeltaSeconds);
                 } catch (error) {
                     console.log(`JSEngine: Error in system '${system.id}' update:`, error);
                 }
